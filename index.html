@@ -1,11 +1,187 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>20241024</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <link rel="shortcut icon" href="../img/star.jpg">
+    <style>
+        .data{
+            display: flex;
+        }
+        .data_in{
+            margin: 15px;
+        }
+        span{
+            width: 200px;
+        }
+    </style>
 </head>
 <body>
+    <div>
+        <button onclick="getDataFromJSONFile()">명단 보기</button>
+    </div>
     
+    <div>
+        <div class="data" style="margin-bottom: 10px;">
+            <div style="margin-left: 10px;">
+                <span>NAME</span>
+                <input type="text" id="player_name" placeholder="이름"/><br>
+                <span>TOTAL GOALS</span>
+                <input type="number" id="player_total_goal" placeholder="총 골 수"/><br>
+                <span>TOTAL ASSISTS</span>
+                <input type="number" id="player_total_assist" placeholder="총 어시스트 수"/><br>
+                <span>NATIONALITY</span>
+                <input type="text" id="player_nationality" placeholder="국적"/><br>
+                <span>NUMBER</span>
+                <input type="number" id="player_number" placeholder="등번호"/>
+            </div>
+        </div>
+        <button onclick="createDataToJSONFile()">추가</button>
+    </div>
+
+    <div>
+        <input type="text" id="player_id" placeholder="수정하고 싶은 ID를 입력"/>
+        <button onclick="updateDataToJSONFile()">수정</button>
+    </div>
+
+    <div>
+        <input type="text" id="delete_id" placeholder="삭제하고 싶은 ID를 입력"/>
+        <button onclick="deleteDataFromJSONFile()">삭제</button>
+    </div>
+
+    <div class="data"> <!--데이터가 들어가는 곳-->
+        <div id="div_players_id" class="data_in">
+            <div>ID</div>
+        </div>
+        <div id="div_players_name" class="data_in">
+            <div>NAME</div>
+        </div>
+        <div id="div_players_total_goals" class="data_in">
+            <div>Total Goals</div>
+        </div>
+        <div id="div_players_total_assists" class="data_in">
+            <div>Total Assists</div>
+        </div>
+        <div id="div_players_nationality" class="data_in">
+            <div>Nationality</div>
+        </div>
+        <div id="div_players_position_number" class="data_in">
+            <div>BACK NUMBER</div>
+        </div>
+    </div>
+    
+    <script>
+        function getDataFromJSONFile() {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", "https://672818aa270bd0b975544f46.mockapi.io/api/v1/players");
+            xhr.setRequestHeader("content-type", "application/json");
+            xhr.send();
+
+            xhr.onload = () => { 
+                if (xhr.status === 200) {
+                    // 각 div를 비워서 초기화
+                    $("#div_players_id").html("<div>ID</div>");
+                    $("#div_players_name").html("<div>NAME</div>");
+                    $("#div_players_total_goals").html("<div>Total Goals</div>");
+                    $("#div_players_total_assists").html("<div>Total Assists</div>");
+                    $("#div_players_nationality").html("<div>Nationality</div>");
+                    $("#div_players_position_number").html("<div>BACK NUMBER</div>");
+
+                    let players = JSON.parse(xhr.response);
+
+                    players.forEach((item) => {
+                        // 각 속성을 해당하는 div에 추가
+                        $("#div_players_id").append("<div>" + item.id + "</div>");
+                        $("#div_players_name").append("<div>" + item.name + "</div>");
+                        $("#div_players_total_goals").append("<div>" + item.total_goal + "</div>");
+                        $("#div_players_total_assists").append("<div>" + item.total_assist + "</div>");
+                        $("#div_players_nationality").append("<div>" + item.nationality + "</div>");
+                        $("#div_players_position_number").append("<div>" + item.number + "</div>");
+                    });
+                } else {
+                    console.error("데이터를 가져오는 데 실패했습니다.", xhr.statusText);
+                }
+            };
+        }
+
+        function createDataToJSONFile() {
+            const xhr = new XMLHttpRequest(); 
+            xhr.open("POST", "https://672818aa270bd0b975544f46.mockapi.io/api/v1/players");
+            xhr.setRequestHeader("content-type", "application/json; charset=UTF-8");
+
+            let data = {
+                name: $("#player_name").val(),
+                total_goal: $("#player_total_goal").val(),
+                total_assist: $("#player_total_assist").val(),
+                nationality: $("#player_nationality").val(),
+                number: $("#player_number").val()
+            };
+
+            xhr.send(JSON.stringify(data));
+            xhr.onload = () => { 
+                if(xhr.status === 201) {
+                    alert("등록 성공!");
+
+                    $("#player_name").val('');
+                    $("#player_total_goal").val('');
+                    $("#player_total_assist").val('');
+                    $("#player_nationality").val('');
+                    $("#player_number").val('');
+
+                    getDataFromJSONFile();
+                }
+            }
+        }
+
+        function updateDataToJSONFile() {
+            let id = $("#player_id").val();
+            const xhr = new XMLHttpRequest(); 
+            xhr.open("PUT", "https://672818aa270bd0b975544f46.mockapi.io/api/v1/players/" + id);
+            xhr.setRequestHeader("content-type", "application/json; charset=UTF-8");
+
+            let data = {
+                name: $("#player_name").val(),
+                total_goal: $("#player_total_goal").val(),
+                total_assist: $("#player_total_assist").val(),
+                nationality: $("#player_nationality").val(),
+                number: $("#player_number").val()
+            };
+
+            xhr.send(JSON.stringify(data));
+            xhr.onload = () => { 
+                if(xhr.status === 200) {
+                    alert("수정 성공!");
+                    $("#player_name").val('');
+                    $("#player_total_goal").val('');
+                    $("#player_total_assist").val('');
+                    $("#player_nationality").val('');
+                    $("#player_number").val('');
+                    $("#player_id").val('');
+                    getDataFromJSONFile();
+                }
+            }
+        }
+
+        function deleteDataFromJSONFile() {
+            let id = $("#delete_id").val();
+            const xhr = new XMLHttpRequest(); 
+            xhr.open("DELETE", "https://672818aa270bd0b975544f46.mockapi.io/api/v1/players/" + id);
+            xhr.setRequestHeader("content-type", "application/json; charset=UTF-8");
+
+            xhr.send();
+            xhr.onload = () => { 
+                if(xhr.status === 200) {
+                    alert("삭제 성공!");
+                    $("#delete_id").val('');
+                    getDataFromJSONFile();
+                } else {
+                    alert("삭제 실패!");
+                }
+            }
+        }
+    </script>
 </body>
 </html>
