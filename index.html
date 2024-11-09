@@ -8,43 +8,64 @@
     <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <link rel="shortcut icon" href="../img/star.jpg">
     <style>
-        .data{
+        .data {
             display: flex;
         }
-        .data_in{
+        .data_in {
             margin: 15px;
         }
-        span{
-            width: 200px;
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            width: 300px;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
     <div>
         <button onclick="getDataFromJSONFile()">명단 보기</button>
-    </div>
-    
-    <div>
-        <div class="data" style="margin-bottom: 10px;">
-            <div style="margin-left: 10px;">
-                <span>NAME</span>
-                <input type="text" id="player_name" placeholder="이름"/><br>
-                <span>TOTAL GOALS</span>
-                <input type="number" id="player_total_goal" placeholder="총 골 수"/><br>
-                <span>TOTAL ASSISTS</span>
-                <input type="number" id="player_total_assist" placeholder="총 어시스트 수"/><br>
-                <span>NATIONALITY</span>
-                <input type="text" id="player_nationality" placeholder="국적"/><br>
-                <span>NUMBER</span>
-                <input type="number" id="player_number" placeholder="등번호"/>
-            </div>
-        </div>
-        <button onclick="createDataToJSONFile()">추가</button>
+        <button onclick="openModal('create')">추가</button>
     </div>
 
+    <!-- 수정용 ID 입력 및 버튼 -->
     <div>
-        <input type="text" id="player_id" placeholder="수정하고 싶은 ID를 입력"/>
-        <button onclick="updateDataToJSONFile()">수정</button>
+        <input type="text" id="edit_id" placeholder="수정하고 싶은 ID를 입력"/>
+        <button onclick="openEditModal()">수정</button>
+    </div>
+
+    <!-- 모달 창 -->
+    <div id="playerModal" class="modal">
+        <div class="modal-content">
+            <span onclick="closeModal()" style="cursor: pointer;">취소</span>
+            <h2 id="modalTitle">추가하기</h2>
+            <input type="hidden" id="modalAction" value="">
+            <input type="hidden" id="player_id">
+            <span>NAME</span>
+            <input type="text" id="player_name" placeholder="이름"/><br>
+            <span>TOTAL GOALS</span>
+            <input type="number" id="player_total_goal" placeholder="총 골 수"/><br>
+            <span>TOTAL ASSISTS</span>
+            <input type="number" id="player_total_assist" placeholder="총 어시스트 수"/><br>
+            <span>NATIONALITY</span>
+            <input type="text" id="player_nationality" placeholder="국적"/><br>
+            <span>NUMBER</span>
+            <input type="number" id="player_number" placeholder="등번호"/><br><br>
+
+            <button onclick="handleModalAction()">저장</button>
+        </div>
     </div>
 
     <div>
@@ -102,9 +123,61 @@
                         $("#div_players_position_number").append("<div>" + item.number + "</div>");
                     });
                 } else {
-                    console.error("데이터를 가져오는 데 실패했습니다.", xhr.statusText);
+                    console.error("ERROR!");
                 }
             };
+        }
+
+        function openModal(action, id = '') {
+            $("#modalAction").val(action);
+            
+            $("#modalTitle").text(action === 'create' ? '추가하기' : '수정하기');
+
+            if (action === 'edit') {
+                $("#player_id").val(id);
+            }
+            $("#player_name, #player_total_goal, #player_total_assist, #player_nationality, #player_number").val('');
+            $("#playerModal").css("display", "block");
+        }
+
+        function openEditModal() {
+            const id = $("#edit_id").val();
+            if (!id) {
+                alert("수정할 ID를 입력하세요.");
+                return;
+            }
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", `https://672818aa270bd0b975544f46.mockapi.io/api/v1/players/` + id);
+            xhr.setRequestHeader("content-type", "application/json");
+            xhr.send();
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const player = JSON.parse(xhr.response);
+                    $("#player_id").val(player.id);
+                    $("#player_name").val(player.name);
+                    $("#player_total_goal").val(player.total_goal);
+                    $("#player_total_assist").val(player.total_assist);
+                    $("#player_nationality").val(player.nationality);
+                    $("#player_number").val(player.number);
+                    openModal('edit', id);
+                } else {
+                    alert("ERROR!");
+                }
+            };
+        }
+
+        function closeModal() {
+            $("#playerModal").css("display", "none");
+        }
+
+        function handleModalAction() {
+            const action = $("#modalAction").val();
+            if (action === 'create') {
+                createDataToJSONFile();
+            } else if (action === 'edit') {
+                updateDataToJSONFile();
+            }
+            closeModal();
         }
 
         function createDataToJSONFile() {
@@ -124,13 +197,6 @@
             xhr.onload = () => { 
                 if(xhr.status === 201) {
                     alert("등록 성공!");
-
-                    $("#player_name").val('');
-                    $("#player_total_goal").val('');
-                    $("#player_total_assist").val('');
-                    $("#player_nationality").val('');
-                    $("#player_number").val('');
-
                     getDataFromJSONFile();
                 }
             }
@@ -154,18 +220,13 @@
             xhr.onload = () => { 
                 if(xhr.status === 200) {
                     alert("수정 성공!");
-                    $("#player_name").val('');
-                    $("#player_total_goal").val('');
-                    $("#player_total_assist").val('');
-                    $("#player_nationality").val('');
-                    $("#player_number").val('');
-                    $("#player_id").val('');
+                    $("#edit_id").val('');
                     getDataFromJSONFile();
                 }
             }
         }
 
-        function deleteDataFromJSONFile() {
+	    function deleteDataFromJSONFile() {
             let id = $("#delete_id").val();
             const xhr = new XMLHttpRequest(); 
             xhr.open("DELETE", "https://672818aa270bd0b975544f46.mockapi.io/api/v1/players/" + id);
